@@ -1,0 +1,94 @@
+---
+title: "MATH2270 Assignment 2"
+subtitle: "Deconstruct, Reconstruct Web Report"
+author: "Rinaldo Gagiano (S3870806)"
+output: html_document
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+# Do not change these settings!
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+### {.tabset} 
+
+
+Click the **Original**, **Code** and **Reconstruction** tabs to read about the issues and how they were fixed. 
+
+#### Original
+
+<br>
+<center>
+<img src="Term-Choice.png" width="80%">
+</center>
+<center>*Source: University of Washington: BIS232 Week 2 (2012).*</center>
+<br>
+
+**Objective**
+The objective of the data visualisation above is to convey the percentage of used terms between 'Pop', 'Soda', and 'Coke', within each state of the USA, through a pie chart. The targetted audience of this visualisation could be marketing associates for large soft drink companies. 
+
+The visualisation chosen had the following three main issues:
+
+* Pie Charts overlap causing visual bombardment where states are compact
+* Most of the pie charts can't effectively display the second or third term due to the sizing of each chart to fit within the allocated state
+* Poor colour scheme draws attention to the red colouring when this has no greater importance than the other coloured terms
+
+**Reference**
+
+* Week 2 - IAS Portfolio YurimN. (2012). Retrieved September 18, 2020, from https://sites.google.com/a/uw.edu/ias-port-yurimn/-bis232-weekly-postings/week3
+
+#### Code
+
+The following code was used to fix the issues identified in the original. 
+
+```{r}
+library(readxl) 
+library(dplyr) 
+library(tidyverse)
+library(ggthemes)
+library(mapproj)
+library(maps)
+
+df <- read_xlsx("popvssoda.xlsx")
+county_choice <- cbind(df[2:3])
+county_choice$Choice <- factor(county_choice$Choice,levels=c("Pop","Soda","Coke","Other"),labels=c(1,2,3,4))
+getmode <- function(x) {
+  lone <- unique(x)
+  lone[which.max(tabulate(match(x, lone)))]
+}
+state_choice <- county_choice %>% group_by(State) %>% summarise(Choice = getmode(Choice))
+state_choice$Choice <- factor(state_choice$Choice,levels=c(1,2,3,4),labels=c("Pop","Soda","Coke","Other"))
+
+
+us_states <- map_data("state")
+colnames(us_states)[5] <-  c("State")
+state_choice$State <- tolower(state_choice$State)
+state_choice_map <- left_join(us_states,state_choice,by="State")
+
+p0 <- ggplot(data = state_choice_map,
+             mapping = aes(x = long, y = lat,
+                           group = group, fill = Choice))
+p1 <- p0 + geom_polygon(color = "black", size = 0.1) +
+  coord_map(projection = "albers", lat0 = 39, lat1 = 45) 
+p2 <- p1 +
+  labs(title = "US Term Used: Saying Coke, Pop or Soda by State", fill = NULL) + 
+  scale_fill_manual(values=c("#3c528b", "#22908b", "#5bc962"))
+```
+
+**Data Reference**
+
+* McConchie, A. (2015, August 30). Pop vs Soda. Retrieved September 18, 2020, from http://popvssoda.com/statistics/USA.html
+
+**Code Reference**
+
+* Data Visualization. (n.d.). Retrieved September 18, 2020, from https://socviz.co/maps.html
+
+#### Reconstruction
+
+The following plot fixes the main issues in the original.
+
+```{r fig.align="center", echo = FALSE}
+p2 + theme_map() 
+```
+
